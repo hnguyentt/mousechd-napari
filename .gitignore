@@ -1,0 +1,17 @@
+# Folders
+
+.Rhistory
+.vscode
+**/.DS_Store
+**/__pycache__
+**/.ipynb_checkpoints
+**/*.aux
+**/*.log
+**/*.fdb_latexmk
+**/*.pdf
+**/*.synctex.gz
+**/*.fls
+
+build/
+dist/
+mousechd_napari.egg-info/
