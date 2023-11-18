@@ -10,12 +10,12 @@ contributions:
       title: Create MouseCHD widget
     - id: mousechd-napari.sample
       title: sample
-      python_name: mousechd_napari.sample_data:make_sample
+      python_name: mousechd_napari.sample_data:load_sample
   readers:
   - command: mousechd-napari.get_reader
     filename_patterns:
-    - '*.tif'
-    - '*.tiff'
+    - '*.nrrd'
+    - '*.nii.gz'
     - '*.dcm'
     accepts_directories: true
   sample_data:
