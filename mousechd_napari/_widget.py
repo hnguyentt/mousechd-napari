@@ -663,8 +663,8 @@ class MouseCHD(QScrollArea):
             conf_path = os.path.join(CLF_DIR, "configs.json")
             weights_path = os.path.join(CLF_DIR, "best_model.hdf5")
         else:
-            conf_path = os.path.join(self.model_path, "configs.json")
-            weights_path = os.path.join(self.model_path, "best_model.hdf5")
+            conf_path = os.path.join(self.model_path.text(), "configs.json")
+            weights_path = os.path.join(self.model_path.text(), "best_model.hdf5")
         
         self.model = load_MouseCHD_model(conf_path=conf_path,
                                          weights_path=weights_path) 

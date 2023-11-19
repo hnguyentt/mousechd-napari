@@ -1,6 +1,6 @@
 include LICENSE
 include README.md
-include mousechd_napari/assets/
+include mousechd_napari/assets/*
 
 recursive-exclude * __pycache__
 recursive-exclude * *.py[co]
