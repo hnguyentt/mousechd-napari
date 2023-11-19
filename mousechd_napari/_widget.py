@@ -1,7 +1,7 @@
 import logging
 import time
 from datetime import datetime
-import os
+import os, sys
 import json
 import re
 import pathlib
@@ -26,6 +26,12 @@ from sklearn.model_selection import train_test_split
 import torch
 import tensorflow as tf
 
+# Fix the problem when installing plugin from Napari hub
+#========================================================#
+import pkgutil
+if pkgutil.find_loader("mousechd") is None:
+    os.system(f"{sys.executable} -m pip install mousechd")
+#========================================================#
 
 from mousechd.utils.tools import CACHE_DIR, set_logger
 from mousechd.classifier.utils import download_clf_models, CLF_DIR
