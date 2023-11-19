@@ -5,13 +5,6 @@ import os
 import json
 import re
 import pathlib
-import pandas as pd
-import numpy as np
-import SimpleITK as sitk
-from sklearn.model_selection import train_test_split
-
-import torch
-import tensorflow as tf
 
 import napari
 from napari.layers import Image
@@ -24,6 +17,14 @@ from qtpy.QtWidgets import (QWidget, QTabWidget, QHBoxLayout, QVBoxLayout, QLabe
                             QRadioButton, QLineEdit, QScrollArea, QDialog, QMessageBox)
 from qtpy.QtGui import QPixmap, QFont, QMovie
 from qtpy.QtCore import Qt, QSize
+
+import pandas as pd
+import numpy as np
+import SimpleITK as sitk
+from sklearn.model_selection import train_test_split
+
+import torch
+import tensorflow as tf
 
 
 from mousechd.utils.tools import CACHE_DIR, set_logger
@@ -47,6 +48,7 @@ from ._utils import (is_relative_to,
                      preprocess,
                      resample,
                      retrain)
+from .assets import download_assets
 
 
 # Constants
@@ -117,7 +119,8 @@ try:
     tf.test.is_gpu_available()
 except:
     tf.config.set_visible_devices([], 'GPU')
-    
+ 
+download_assets()   
         
 class MouseCHD(QScrollArea):
     def __init__(self, napari_viewer):
@@ -140,7 +143,8 @@ class MouseCHD(QScrollArea):
         header_container.layout().addWidget(header_label, alignment=Qt.AlignCenter)
         ## Logo
         logo_size = QSize(450, 450)
-        logo_path = pathlib.Path(__file__).parent.joinpath(os.path.join('assets', 'thumbnail.png'))
+        logo_path = os.path.join(CACHE_DIR, "Napari", 'assets', 'thumbnail.png')
+        print(logo_path)
         logo = QPixmap(str(logo_path))
         logo = logo.scaled(logo_size, Qt.KeepAspectRatio, transformMode=Qt.SmoothTransformation)
         logo_label = QLabel()
@@ -385,7 +389,7 @@ class MouseCHD(QScrollArea):
         ################
         self.busy_container = QWidget()
         self.busy_container.setLayout(QVBoxLayout())
-        busy_mouse_path = pathlib.Path(__file__).parent.joinpath(os.path.join('assets', 'busy_mouse.gif'))
+        busy_mouse_path = os.path.join(CACHE_DIR, "Napari", "assets", "busy_mouse.gif")
         busy_mouse = QMovie(str(busy_mouse_path))
         movie_screen = QLabel()
         movie_screen.setMinimumSize(QSize(300,200))

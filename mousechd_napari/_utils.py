@@ -17,13 +17,13 @@ import tensorflow as tf
 from mousechd.datasets.preprocess import Preprocess
 from mousechd.datasets.resample import resample_folder
 from mousechd.segmentation.segment import segment_from_folder
-from mousechd.utils.tools import download_file, BASE_URI
 from mousechd.datasets.utils import (get_largest_connectivity,
                                      crop_heart_bbx,
                                      maskout_non_heart,
                                      norm_min_max,
                                      resample3d)
-from mousechd.classifier.utils import download_clf_models, CLF_DIR, clf_urls
+from mousechd.utils.tools import CACHE_DIR
+from mousechd.classifier.utils import CLF_DIR
 from mousechd.classifier.models import load_MouseCHD_model
 from mousechd.classifier.gradcam import GradCAM3D
 
@@ -351,7 +351,7 @@ def gen_transturbo_colormap():
     """
     Generate transparent turbo color map
     """
-    colors = np.load(Path(__file__).parent.joinpath(os.path.join('assets', 'transturbo.npy')))
+    colors = np.load(os.path.join(CACHE_DIR, "Napari", "assets", "transturbo.npy"))
     
     colormap = {
         'colors': colors,
