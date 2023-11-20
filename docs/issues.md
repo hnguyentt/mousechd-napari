@@ -2,5 +2,7 @@
 
 ## Segmentation failed on local machine
 
-When you run on your local machine but the plugin fails at segmentation step. This may be because the GPU memory is not enough. It is recommended to have GPU memory 10GB or above.
+If you encounter a segmentation failure when running the plugin on your local machine, it could be due to insufficient GPU memory. We recommend having a GPU with a memory capacity of 10GB or above for optimal performance.
+
+
 
