@@ -50,7 +50,14 @@ def is_relative_to(path1, path2):
 
 
 def get_relative_sever_dir(shared_folder, path):
-    return os.path.join(os.path.basename(shared_folder),
+    
+    rootdir = shared_folder
+    print(rootdir)
+    while not os.path.ismount(rootdir):
+        rootdir = os.path.dirname(rootdir)
+           
+    return os.path.join(os.path.basename(rootdir),
+                        Path(shared_folder).relative_to(rootdir),
                         Path(path).relative_to(shared_folder))
     
 
@@ -75,16 +82,24 @@ def segment_heart(resrc,
             segment_from_folder(indir=os.path.join(workdir, "processed", heart_name),
                                 outdir=os.path.join(workdir, "HeartSeg"))
         else:
+            print("Run on server")
             server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
+            
+            print(f"server home: {server_home}")
 
             server_indir = get_relative_sever_dir(shared_folder, indir)
             server_outdir = get_relative_sever_dir(shared_folder, outdir)
+            print(f"indir: {server_indir}")
+            print(f"outdir: {server_outdir}")
+            
             if slurm:
                 cmd = slurm_cmd + f" {server_home}/{lib_path} segment"
             else:
                 cmd = f"{server_home}/{lib_path} segment"
             
             out = subprocess.getoutput(f'ssh {servername} "{cmd} -indir {server_home}/DATA/{server_indir} -outdir {server_home}/DATA/{server_outdir}"')
+            
+            print(out)
             
             shutil.rmtree(indir)
         
@@ -317,6 +332,8 @@ def retrain(resrc,
         logging.info(f"cmd: {cmd}")
         
         out = subprocess.getoutput(f'ssh {servername} "{cmd}"')
+        
+        logging.info(out)
         
         if "error" in out:
             logging.info(out)

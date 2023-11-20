@@ -486,7 +486,7 @@ class MouseCHD(QScrollArea):
         
         self.logdir = self.outdir.text()
         if self.logdir != "":
-            self.logdir = os.path.join(self.logdir, "logs")
+            self.logdir = os.path.join(self.logdir, "LOGS")
             
         self.run_worker = None
         self.log_worker = None
@@ -604,7 +604,7 @@ class MouseCHD(QScrollArea):
     def _on_outdir_changed(self):
         self.logdir = self.outdir.text()
         if self.logdir != "":
-            self.logdir = os.path.join(self.logdir, "logs")
+            self.logdir = os.path.join(self.logdir, "LOGS")
         
         if os.path.isdir(self.logdir):
             self.run_tsb_btn.show()
