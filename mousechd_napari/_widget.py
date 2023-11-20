@@ -986,9 +986,8 @@ class MouseCHD(QScrollArea):
                 shutil.rmtree(os.path.join(self.workdir, "retrain"))
             except FileNotFoundError:
                 pass
-        
+            
         self.cache_btn.setEnabled(True)
-        
    
 
 @thread_worker

@@ -78,7 +78,11 @@ This step allows you to alias the server address for easy access.
         User <your_username>
         ForwardAgent yes
         ProxyCommand none
+        IdentityFile ~/.ssh/id_rsa
     ```
+
+    Replace the contend inside `<>` with your own information.
+
 5. <kbd>Ctrl</kbd> + <kbd>x</kbd> &rarr; <kbd>y</kbd>
 
 ## On server
@@ -89,6 +93,8 @@ This step allows you to alias the server address for easy access.
 2. SSH to your server: `ssh <hostname>`, enter the required password.
 3. `nano ~/.ssh/authorized_keys`  &rarr; paste the content of `id_rsa.pub` as new line
 4. <kbd>Ctrl</kbd> + <kbd>x</kbd> &rarr; <kbd>y</kbd>
+
+After this step, you can access to the server without entering password.
 
 ## Install the `mousechd` package
 
@@ -101,21 +107,21 @@ Congratulations! You've successfully completed the setup to run the plugin on th
 
 <table>
     <thead>
-        <tr>
+        <!-- <tr>
             <th></th>
             <th></th>
-        </tr>
+        </tr> -->
     </thead>
     <tbody>
         <tr>
             <td rowspan=5><img src=../assets/server_params.png width="1000"></td>
-            <td><b>Servername:</b> it is the hostname you place in your config file</td>
+            <td><b>Servername:</b> it is the hostname you placed in your config file.</td>
         </tr>
         <tr>
-            <td><b>Library path:</b> you can find this parameter by typing <mark>which mousechd</mark> on your server when the <i>mousech</i>` environment is activated. Default: <i>miniconda3/envs/mousechd/bin/mousechd</i>.</td>
+            <td><b>Library path:</b> you can find this parameter by typing <font color=red><i>which mousechd</i></font> on your server when the <font color=red><i>mousech</i></font> environment is activated. Default: <i>miniconda3/envs/mousechd/bin/mousechd</i>.</td>
         </tr>
         <tr>
-            <td><b>Slurm:</b> your server uses [Slurm Workload Manger] to request the resource or not. If yes, what is the command? Default: <i>srun -J 'mousechd' --qos=gpu --gres=gpu:1</i></td>
+            <td><b>Slurm:</b> your server uses <a href=https://slurm.schedmd.com/documentation.html> <font color=green>Slurm Workload Manager</font> </a>" to request the resource or not. If yes, what is the command? Default: <i>srun -J 'mousechd' --qos=gpu --gres=gpu:1</i></td>
         </tr>
         <tr>
             <td><b>Load modules:</b> Do you need to load some modules to run on GPU? If yes, specify. Default: <i>module use /c7/shared/modulefiles && module load cuda/11.8.0_520.61.05</i></td>
@@ -126,3 +132,4 @@ Congratulations! You've successfully completed the setup to run the plugin on th
     </tbody>
 </table>
 
+*These paremeters will automatically saved for future use*
