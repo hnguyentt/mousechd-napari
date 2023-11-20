@@ -1,6 +1,6 @@
 # How to use MouseCHD Napari plugin
 
-Video tutorial: [Quick start](https://drive.google.com/drive/u/2/folders/1zMkWgJ65AWfg4uVmaDA62EWGhPR1j7Ss)
+Tutorial video: [Quick start](https://drive.google.com/file/d/1nQBw5jj3VtRH8pFlDuih_lmWLfwtr69M/view?usp=sharing)
 
 This plugin is a tool for heart segmentation and detection of congenital heart diseases in mice. You can run this plugin with your local or remote server's resources.
 
