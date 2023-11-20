@@ -158,11 +158,20 @@ class MouseCHD(QScrollArea):
         logo_label.setMinimumWidth(500)
         header_container.layout().addWidget(logo_label, alignment=Qt.AlignCenter)
         ## Credit
+        credit_container = QWidget()
+        credit_container.setLayout(QHBoxLayout())
         credit_label = QLabel("@IMOD, Institut Pasteur\n" + "-"*35)
         credit_label.setFont(QFont("Helvetica [Cronyx]", 10))
-        header_container.layout().addWidget(credit_label, alignment=Qt.AlignLeft)
+        credit_container.layout().addWidget(credit_label)
+        link = "<a href=\"https://github.com/hnguyentt/mousechd-napari/blob/master/docs\"> <font color=blue>Quickstart</font></a>"
+        tut_label = QLabel(link)
+        tut_label.setFont(QFont("Helvetica [Cronyx]", 15))
+        tut_label.setOpenExternalLinks(True)
+        credit_container.layout().addWidget(tut_label)
+        header_container.layout().addWidget(credit_container, alignment=Qt.AlignLeft)
         
         self.container.layout().addWidget(header_container, alignment=Qt.AlignCenter)
+        
         
         #############
         # Resources # 
