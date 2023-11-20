@@ -2,9 +2,9 @@
 
 Tutorial video: [Quick start](https://drive.google.com/file/d/1nQBw5jj3VtRH8pFlDuih_lmWLfwtr69M/view?usp=sharing)
 
-This plugin is a tool for heart segmentation and detection of congenital heart diseases in mice. You can run this plugin with your local or remote server's resources.
+This plugin serves as a tool for heart segmentation and the detection of congenital heart disorders in mice. You can execute the plugin utilizing the resources of either your local machine or a remote server.
 
-Segmentation step requires GPU to run so if your local machine does not have a GPU, you can do the computation from a GPU-supported remote server. Refer to [server_setup.md](server_setup.md) for more detail.
+The segmentation step necessitates GPU acceleration. If your local machine lacks a GPU, consider offloading the computation to a remote server with GPU support. Refer to [server_setup.md](server_setup.md) for more detail.
 
 ## Open MouseCHD Plugin
 1. Open Napari
@@ -12,7 +12,7 @@ Segmentation step requires GPU to run so if your local machine does not have a G
 
 ## Load data
 ### Sample data
-For quick test, you can you sample data provided by MouseCHD Napari plugin by: `File` &rarr; `Open Sample` &rarr; `microCTscan`
+For quick test, you can use sample data provided by MouseCHD Napari plugin: `File` &rarr; `Open Sample` &rarr; `microCTscan`
 
 ### Load your own data
 * Drag and drop your data on the image display area. Supported format: DICOM folder, NRRD, NIFTI.
