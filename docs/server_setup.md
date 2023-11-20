@@ -96,12 +96,15 @@ This step allows you to alias the server address for easy access.
 
 After this step, you can access to the server without entering password.
 
-## Install the `mousechd` package
+### Install the `mousechd` package
 
 1. SSH to your server: `ssh <hostname>`, enter the required password.
 2. `conda create -n mousechd python=3.9`
 3. `conda activate mousechd`
 4. `pip install mousechd`
+
+### Locate the shared folder
+On the remote server, locate the shared folder at `$HOME/DATA`.
 
 Congratulations! You've successfully completed the setup to run the plugin on the remote server. Here are some key parameters that require your attention during plugin input:
 
