@@ -106,6 +106,9 @@ After this step, you can access to the server without entering password.
 ### Locate the shared folder
 On the remote server, locate the shared folder at `$HOME/DATA`.
 
+* If the shared folder is remote, mount your shared folder at `$HOME/DATA`
+* If your shared folder is on the server, use `mkdir <shared_folder_name> && ln -sf <path/to/shared/folder>/* ~/DATA/<shared_folder_name>`
+
 Congratulations! You've successfully completed the setup to run the plugin on the remote server. Here are some key parameters that require your attention during plugin input:
 
 <table>

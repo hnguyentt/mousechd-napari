@@ -55,10 +55,12 @@ def get_relative_sever_dir(shared_folder, path):
     print(rootdir)
     while not os.path.ismount(rootdir):
         rootdir = os.path.dirname(rootdir)
-           
-    return os.path.join(os.path.basename(rootdir),
-                        Path(shared_folder).relative_to(rootdir),
-                        Path(path).relative_to(shared_folder))
+    
+    try:       
+        return os.path.join(os.path.basename(rootdir),
+                            Path(path).relative_to(rootdir))
+    except ValueError:
+        logging.info(f"Path {path} is not on shared folder!")
     
 
 def segment_heart(resrc,
@@ -331,11 +333,12 @@ def retrain(resrc,
         
         logging.info(f"cmd: {cmd}")
         
+        
         out = subprocess.getoutput(f'ssh {servername} "{cmd}"')
         
         logging.info(out)
         
-        if "error" in out:
+        if ("error" in out) and ("Terminated" not in out):
             logging.info(out)
             return "Error"
         else:

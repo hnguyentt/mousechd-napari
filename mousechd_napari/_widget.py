@@ -5,6 +5,7 @@ import os, sys
 import json
 import re
 import pathlib
+import subprocess
 
 import napari
 from napari.layers import Image
@@ -931,6 +932,15 @@ class MouseCHD(QScrollArea):
         self.run_worker.quit()
         if self.log_worker is not None:
             self.log_worker.quit()
+            
+        if self.resrc == "server":
+            server_home = subprocess.getoutput(f'ssh {self.servername.text()} pwd')
+            out = subprocess.getoutput(f'ssh {self.servername.text()} "ps aux | grep {server_home}/{self.lib_path.text()}"')
+            print(out)
+            pid = out.split()[1]
+            print(out.split())
+            print(pid)
+            print(subprocess.getoutput(f'ssh {self.servername.text()} "kill -9 {pid}"'))
         self.stop_btn.hide()
         self.run_btn.show()
         self.log_container.show()
@@ -1254,7 +1264,8 @@ def run_task(task,
                              module=module,
                              module_ls=module_ls,
                              export=export,
-                             exports=exports)
+                             exports=exports)    
+                
             train_end = time.time()
             if status == "Error":
                 layer["error"] = "Error"

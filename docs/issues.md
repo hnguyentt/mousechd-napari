@@ -12,3 +12,8 @@ Here are some possible causes:
 3. Does the server use Slurm to manage the resource request? If yes, is the slurm command correct? See: [server parameters](https://github.com/hnguyentt/mousechd-napari/blob/master/docs/server_setup.md#on-server)
 4. Do you need to load certain modules for running?
 
+## The task is still running even though I click on `Stop` button
+
+This can be seen when you do the segmentation or retrain on your local machine.
+
+
