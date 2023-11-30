@@ -19,7 +19,7 @@
 conda create -n mousechd_napari python=3.9
 conda activate mousechd_napari
 pip install "napari[all]"
-pip install mousechd_napari
+pip install mousechd-napari
 napari
 ```
 
