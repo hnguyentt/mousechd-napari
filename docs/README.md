@@ -1,6 +1,6 @@
 # How to use MouseCHD Napari plugin
 
-* Tutorial video: [Quick start](https://drive.google.com/file/d/1nQBw5jj3VtRH8pFlDuih_lmWLfwtr69M/view?usp=sharing)
+* Tutorial video: [Quick start](https://www.youtube.com/watch?v=RT6mIovz7sw)
 * Common issues: [Common issues](./issues.md)
 * Report issues: [Issues](https://github.com/hnguyentt/mousechd-napari/issues)
 
