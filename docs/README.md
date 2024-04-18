@@ -30,7 +30,7 @@ For quick test, you can use sample data provided by MouseCHD Napari plugin: `Fil
 ## View GradCAM
 ![](../assets/viewGradCAM.png)
 
-Watch: [Quickstart (1:30 - 1:58)](https://drive.google.com/file/d/1nQBw5jj3VtRH8pFlDuih_lmWLfwtr69M/view?usp=sharing)
+Watch: [Quickstart (1:30 - 1:58)](https://www.youtube.com/watch?v=RT6mIovz7sw)
 
 ## Retrain
 1. Choose a resource to run on. If you choose server, please setup your local machine and remote server, following [this instruction](server_setup.md).
@@ -42,7 +42,7 @@ Watch: [Quickstart (1:30 - 1:58)](https://drive.google.com/file/d/1nQBw5jj3VtRH8
 
 As the retraining begins, you can also click on <font color=orange><b>Run Tensorboard</b></font> to monitor your training progress.
 
-Watch: [Quickstart (1:59 - 2:43)](https://drive.google.com/file/d/1nQBw5jj3VtRH8pFlDuih_lmWLfwtr69M/view?usp=sharing)
+Watch: [Quickstart (1:59 - 2:43)](https://www.youtube.com/watch?v=RT6mIovz7sw)
 
 ## Diagnose with retrained model
 1. Choose a resource to run on. If you choose server, please setup your local machine and remote server, following [this instruction](server_setup.md).
@@ -52,7 +52,7 @@ Watch: [Quickstart (1:59 - 2:43)](https://drive.google.com/file/d/1nQBw5jj3VtRH8
 5. Browse the custome model path.
 6. Click on Diagnose button.
 
-Watch: [Quickstart (2:43 - 3:43)](https://drive.google.com/file/d/1nQBw5jj3VtRH8pFlDuih_lmWLfwtr69M/view?usp=sharing)
+Watch: [Quickstart (2:43 - 3:43)](https://www.youtube.com/watch?v=RT6mIovz7sw)
 
 ## Delete cache
 When executing the 'Retrain' task, intermediary files such as processed data, heart masks, and resampled data are stored. While this can enhance speed, it may consume a significant amount of storage space. To clear the cache and free up space, simply click on the  <font color=red><b>Delete Cache</b></font> button.

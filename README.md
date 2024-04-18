@@ -1,6 +1,6 @@
 # Napari plugin for MouseCHD project
 
-![](https://raw.githubusercontent.com/hnguyentt/mousechd-napari/master/assets/thumbnail.png)
+![](https://raw.githubusercontent.com/hnguyentt/mousechd-napari/master/assets/demo.gif)
 
 *Tool for heart segmentation and congenital heart defect detection in mice.*
 
@@ -24,5 +24,4 @@ napari
 ```
 
 ## How to use
-
 Please find details instruction in folder [docs](https://github.com/hnguyentt/mousechd-napari/tree/master/docs)
