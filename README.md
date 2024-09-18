@@ -10,7 +10,7 @@
 
 (2) Install `mousechd-napari` plugin:
     * Run Napari
-    * `Plugins` --> `Install/Uninstall Plugins ...` --> Search for `mousechd_napari` --> Click on `install`.
+    * `Plugins` --> `Install/Uninstall Plugins ...` --> Search for `mousechd-napari` --> Click on `install`.
 
 (3) Restart Napari to run the plugin
 
