@@ -1,6 +1,10 @@
 # Setup server
 
+The instructions provided in this tutorial are aimed at establishing a standard SSH connection to a server within the user's network. This setup assumes that you have access to a remote computing server with SSH enabled, allowing you to securely connect and run the necessary software. 
+
 ## On your local machine
+In case you haven't had SSH installed on your local machine, please install as following.
+
 ### Install ssh
 SSH is required to access the remote server resource. If you haven't installed `ssh`, follow one of these instructions to install `ssh`:
 
