@@ -1,16 +1,10 @@
 import os
-from pathlib import Path
-from mousechd.utils.tools import download_file, BASE_URI, CACHE_DIR
+from mousechd.utils.tools import download_zenodo, CACHE_DIR
 
-urls = {
-    "thumbnail.png": f"{BASE_URI}/thumbnail.png",
-    "busy_mouse.gif": f"{BASE_URI}/busy_mouse.gif",
-    "transturbo.npy": f"{BASE_URI}/transturbo.npy"
-}
 
 def download_assets():
-    savedir = os.path.join(CACHE_DIR, "Napari", "assets")
-    for fname, url in urls.items():
-        fname = Path(fname)
-        download_file(url, fname, cache_dir=savedir)
+    savedir = os.path.join(CACHE_DIR, "Napari")
+    if not os.path.isfile(os.path.join(savedir, "assets", "sample.nii.gz")):
+        download_zenodo(zenodo_id="13785938", filename="assets.zip", outdir=savedir, extract=True)
+    
         

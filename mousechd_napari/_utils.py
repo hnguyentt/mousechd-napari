@@ -1,13 +1,9 @@
 import logging
 from pathlib import Path
 import os
-import hashlib
 import tempfile
-import sys
 import subprocess
 import shutil
-import time
-import json
 
 import numpy as np
 import SimpleITK as sitk
@@ -17,14 +13,12 @@ import tensorflow as tf
 from mousechd.datasets.preprocess import Preprocess
 from mousechd.datasets.resample import resample_folder
 from mousechd.segmentation.segment import segment_from_folder
-from mousechd.datasets.utils import (get_largest_connectivity,
-                                     crop_heart_bbx,
+from mousechd.datasets.utils import (crop_heart_bbx,
                                      maskout_non_heart,
                                      norm_min_max,
                                      resample3d)
 from mousechd.utils.tools import CACHE_DIR
 from mousechd.classifier.utils import CLF_DIR
-from mousechd.classifier.models import load_MouseCHD_model
 from mousechd.classifier.gradcam import GradCAM3D
 
 tmp_dir = os.path.join(tempfile.gettempdir(), "MouseCHD")
@@ -82,7 +76,8 @@ def segment_heart(resrc,
           
         if resrc == "local":
             segment_from_folder(indir=os.path.join(workdir, "processed", heart_name),
-                                outdir=os.path.join(workdir, "HeartSeg"))
+                                outdir=os.path.join(workdir, "HeartSeg"),
+                                folds=0)
         else:
             print("Run on server")
             server_home = subprocess.getoutput(f'ssh {servername} "pwd"')

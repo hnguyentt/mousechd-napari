@@ -2,7 +2,6 @@ import os
 import re
 import tempfile
 import pydicom
-import numpy as np
 import SimpleITK as sitk
 
 from mousechd.datasets.utils import dicom2nii, nrrd2nii, anyview2LPS, make_isotropic
