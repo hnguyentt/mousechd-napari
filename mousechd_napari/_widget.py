@@ -36,6 +36,7 @@ if pkgutil.find_loader("mousechd") is None:
 
 from mousechd.utils.tools import CACHE_DIR, set_logger
 from mousechd.classifier.utils import download_clf_models, CLF_DIR
+from mousechd.segmentation.utils import download_seg_models
 from mousechd.classifier.models import load_MouseCHD_model
 from mousechd.datasets.utils import (get_largest_connectivity,
                                      get_translate_values)
@@ -480,6 +481,7 @@ class MouseCHD(QScrollArea):
         ######################
         self.workdir = os.path.join(CACHE_DIR, "Napari")
         download_clf_models()
+        download_seg_models()
         self.outdir.setText(outdir)
         
         self.model = load_MouseCHD_model(conf_path=os.path.join(CLF_DIR, "configs.json"),
@@ -837,8 +839,9 @@ class MouseCHD(QScrollArea):
         
         if self.resrc == "local":
             if not torch.cuda.is_available():
-                is_executable = False
-                show_info("Local machine does not have GPU, please use server machine or install corresponding CUDA Toolkit.")
+                show_info("Local machine does not have GPU, running segmentation on CPU may take time")
+                # is_executable = False
+                # show_info("Local machine does not have GPU, please use server machine or install corresponding CUDA Toolkit.")
         if self.resrc == "server":
             if  self.servername.text() == "":
                 is_executable = False
