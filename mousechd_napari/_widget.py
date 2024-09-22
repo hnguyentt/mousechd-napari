@@ -481,7 +481,6 @@ class MouseCHD(QScrollArea):
         ######################
         self.workdir = os.path.join(CACHE_DIR, "Napari")
         download_clf_models()
-        download_seg_models()
         self.outdir.setText(outdir)
         
         self.model = load_MouseCHD_model(conf_path=os.path.join(CLF_DIR, "configs.json"),

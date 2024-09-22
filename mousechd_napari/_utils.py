@@ -117,7 +117,7 @@ def segment_hearts(resrc,
     indir = os.path.join(workdir, "retrain", "processed", "images")
     
     if resrc == "local":
-        segment_from_folder(indir=indir, outdir=outdir)
+        segment_from_folder(indir=indir, outdir=outdir, folds=0)
     else:
         server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
         
