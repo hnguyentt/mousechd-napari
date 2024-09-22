@@ -75,9 +75,17 @@ def segment_heart(resrc,
                     os.path.join(indir, f"{heart_name}_0000.nii.gz"))
           
         if resrc == "local":
-            segment_from_folder(indir=os.path.join(workdir, "processed", heart_name),
-                                outdir=os.path.join(workdir, "HeartSeg"),
-                                folds=0)
+            import torch
+            if torch.cuda.is_available():
+                print("Segmentation with full mode")
+                segment_from_folder(indir=os.path.join(workdir, "processed", heart_name),
+                                    outdir=os.path.join(workdir, "HeartSeg"))
+            else:
+                print("Segmentation with minimal mode")
+                segment_from_folder(indir=os.path.join(workdir, "processed", heart_name),
+                                    outdir=os.path.join(workdir, "HeartSeg"),
+                                    folds=0,
+                                    step_size=1)
         else:
             print("Run on server")
             server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
@@ -117,7 +125,13 @@ def segment_hearts(resrc,
     indir = os.path.join(workdir, "retrain", "processed", "images")
     
     if resrc == "local":
-        segment_from_folder(indir=indir, outdir=outdir, folds=0)
+        import torch
+        if torch.cuda.is_available():
+            print("Segmentation with full mode")
+            segment_from_folder(indir=indir, outdir=outdir)
+        else:
+            print("Segmentation with minimal model")
+            segment_from_folder(indir=indir, outdir=outdir, folds=0, step_size=1)
     else:
         server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
         

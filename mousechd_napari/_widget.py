@@ -36,7 +36,7 @@ if pkgutil.find_loader("mousechd") is None:
 
 from mousechd.utils.tools import CACHE_DIR, set_logger
 from mousechd.classifier.utils import download_clf_models, CLF_DIR
-from mousechd.segmentation.utils import download_seg_models
+from mousechd.segmentation.utils import download_seg_models, SEG_DIR
 from mousechd.classifier.models import load_MouseCHD_model
 from mousechd.datasets.utils import (get_largest_connectivity,
                                      get_translate_values)
@@ -838,7 +838,7 @@ class MouseCHD(QScrollArea):
         
         if self.resrc == "local":
             if not torch.cuda.is_available():
-                show_info("Local machine does not have GPU, running segmentation on CPU may take time")
+                show_info("Local machine does not have GPU, running segmentation on CPU may take 40-45 minutes!")
                 # is_executable = False
                 # show_info("Local machine does not have GPU, please use server machine or install corresponding CUDA Toolkit.")
         if self.resrc == "server":
@@ -1064,6 +1064,19 @@ def run_task(task,
         if task in ["segment", "diagnose"]:
             assert image is not None, "Image must be specified"
             scale = image.scale
+            if not torch.cuda.is_available() and (resrc=="local"):
+                layer["log"] = ("Your machine doesn't have GPUs or GPUs are not compatible." 
+                                + "Using CPU for segmentation may take 40-45 minutes." 
+                                + "Running on GPUs takes 2-3 minutes to finish!")
+                layer["log"] += ("\n\nNote that we use minimal mode: inference with only 1 fold, step_size=1, and distable TTA to make inference on CPU faster"
+                                 + "This may make the segmentation not as accurate as running on full mode!")
+                yield layer
+            if (resrc=="local") and (not os.path.isdir(SEG_DIR)):
+                layer["log"] += "\n\n==> Download segmentation model... (this may take time but it requires only once at the first run)"
+                download_seg_models()
+                layer["log"] += "\n==> Downloaded"
+                yield layer
+            
             show_info("Start heart segmentation!")
             seg_start = time.time()
             heart = segment_heart(resrc=resrc,
@@ -1186,6 +1199,10 @@ def run_task(task,
                                                                       index=False)
             
             # Segmentation
+            if not torch.cuda.is_available() and (resrc=="local"):
+                layer["log"] = "Your machine doesn't have GPUs or GPUs are not compatible. Using CPU for segmentation may take 40-45 minutes. Running on GPUs takes around 2 minutes to finish!"
+                yield layer
+
             seg_start = time.time()
             segment_hearts(resrc=resrc,
                            workdir=workdir,
