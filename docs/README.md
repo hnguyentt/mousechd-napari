@@ -12,6 +12,8 @@ The segmentation step necessitates GPU acceleration. If your local machine lacks
 1. Open Napari
 2. On the upper-left conner, choose `Plugin` &rarr; `MouseCHD`
 
+Note: For the first time, it may take time for downloading resources. Later on, the plugin will start fast.
+
 ## Load data
 ### Sample data
 For quick test, you can use sample data provided by MouseCHD Napari plugin: `File` &rarr; `Open Sample` &rarr; `microCTscan`
@@ -26,6 +28,8 @@ For quick test, you can use sample data provided by MouseCHD Napari plugin: `Fil
 1. Choose a resource to run on. If you choose server, please setup your local machine and remote server, following [this instruction](server_setup.md).
 2. Choose a scan to predict
 3. Click on `Diagnose` button
+
+Note: For the first time running, it may take time to download segmentation model. From the second time on, the program will run faster.
 
 ## View GradCAM
 ![](../assets/viewGradCAM.png)
