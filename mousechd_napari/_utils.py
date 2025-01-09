@@ -24,10 +24,10 @@ from mousechd.classifier.gradcam import GradCAM3D
 tmp_dir = os.path.join(tempfile.gettempdir(), "MouseCHD")
 os.makedirs(tmp_dir, exist_ok=True)
 
-LIB_PATH = "miniconda3/envs/mousechd/bin/mousechd"
-SLURM_CMD = "srun -J 'mousechd' --qos=gpu --gres=gpu:1"
+CONDA_LIB_PATH = "miniconda3/envs/mousechd/bin/mousechd"
+APPTAINER_LIB_PATH = "apptainer exec -B /pasteur --nv mousechd.sif mousechd"
+SLURM_CMD = "srun -J 'mousechd' -p gpu --qos=gpu --gres=gpu:1 --cpus-per-task=1 --mem-per-cpu=500000"
 MODULE_LS = "module use /c7/shared/modulefiles && module load cuda/11.8.0_520.61.05"
-EXPORTS = "XLA_FLAGS=--xla_gpu_cuda_data_dir=/c7/shared/cuda/11.8.0_520.61.05"
 
 
 def is_relative_to(path1, path2):
@@ -58,13 +58,18 @@ def get_relative_sever_dir(shared_folder, path):
     
 
 def segment_heart(resrc,
+                  nthreads_preprocessing,
+                  nthreads_nifti,
+                  step_size,
                   workdir,
                   heart_name,
                   servername="",
                   shared_folder="",
-                  lib_path=LIB_PATH,
+                  lib_path=APPTAINER_LIB_PATH,
                   slurm=False,
-                  slurm_cmd=SLURM_CMD
+                  slurm_cmd=SLURM_CMD,
+                  module=False,
+                  module_ls=MODULE_LS
                   ):
     outdir = os.path.join(workdir, "HeartSeg")
     # Check if the mask is exist
@@ -79,13 +84,18 @@ def segment_heart(resrc,
             if torch.cuda.is_available():
                 print("Segmentation with full mode")
                 segment_from_folder(indir=os.path.join(workdir, "processed", heart_name),
-                                    outdir=os.path.join(workdir, "HeartSeg"))
+                                    outdir=os.path.join(workdir, "HeartSeg"),
+                                    step_size=step_size,
+                                    num_threads_preprocessing=nthreads_preprocessing,
+                                    num_threads_nifti_save=nthreads_nifti)
             else:
                 print("Segmentation with minimal mode")
                 segment_from_folder(indir=os.path.join(workdir, "processed", heart_name),
                                     outdir=os.path.join(workdir, "HeartSeg"),
                                     folds=0,
-                                    step_size=1)
+                                    step_size=step_size,
+                                    num_threads_preprocessing=nthreads_preprocessing,
+                                    num_threads_nifti_save=nthreads_nifti)
         else:
             print("Run on server")
             server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
@@ -97,10 +107,20 @@ def segment_heart(resrc,
             print(f"indir: {server_indir}")
             print(f"outdir: {server_outdir}")
             
+            cmd = f"{lib_path} segment"
+
             if slurm:
-                cmd = slurm_cmd + f" {server_home}/{lib_path} segment"
-            else:
-                cmd = f"{server_home}/{lib_path} segment"
+                cmd = slurm_cmd + f" {cmd}"
+            
+            extra_cmd = ""
+            if module:
+                modules = module_ls.split(";")
+                for m in modules:
+                    extra_cmd += f"{m} && "
+                    
+                cmd = f"{extra_cmd} {cmd}"
+            
+            print(cmd)
             
             out = subprocess.getoutput(f'ssh {servername} "{cmd} -indir {server_home}/DATA/{server_indir} -outdir {server_home}/DATA/{server_outdir}"')
             
@@ -114,12 +134,17 @@ def segment_heart(resrc,
 
 
 def segment_hearts(resrc,
+                   nthreads_preprocessing,
+                   nthreads_nifti,
+                   step_size,
                    workdir,
                    servername="",
                    shared_folder="",
-                   lib_path=LIB_PATH,
+                   lib_path=APPTAINER_LIB_PATH,
                    slurm=False,
-                   slurm_cmd=SLURM_CMD):
+                   slurm_cmd=SLURM_CMD,
+                   module=False,
+                   module_ls=MODULE_LS):
     
     outdir = os.path.join(workdir, "HeartSeg")
     indir = os.path.join(workdir, "retrain", "processed", "images")
@@ -128,20 +153,46 @@ def segment_hearts(resrc,
         import torch
         if torch.cuda.is_available():
             print("Segmentation with full mode")
-            segment_from_folder(indir=indir, outdir=outdir)
+            segment_from_folder(indir=indir,
+                                outdir=outdir,
+                                step_size=step_size,
+                                num_threads_preprocessing=nthreads_preprocessing,
+                                num_threads_nifti_save=nthreads_nifti)
+            
         else:
             print("Segmentation with minimal model")
-            segment_from_folder(indir=indir, outdir=outdir, folds=0, step_size=1)
+            segment_from_folder(indir=indir,
+                                outdir=outdir,
+                                folds=0,
+                                step_size=step_size,
+                                num_threads_preprocessing=nthreads_preprocessing,
+                                num_threads_nifti_save=nthreads_nifti)
+
     else:
+        print("Segment on server")
         server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
         
+        print(f"server home: {server_home}")
+
         server_indir = get_relative_sever_dir(shared_folder, indir)
         server_outdir = get_relative_sever_dir(shared_folder, outdir)
+        print(f"indir: {server_indir}")
+        print(f"outdir: {server_outdir}")
+        
+        cmd = f"{lib_path} segment"
 
         if slurm:
-            cmd = slurm_cmd + f" {server_home}/{lib_path} segment"
-        else:
-            cmd = f"{server_home}/{lib_path} segment"
+            cmd = slurm_cmd + f" {cmd}"
+        
+        extra_cmd = ""
+        if module:
+            modules = module_ls.split(";")
+            for m in modules:
+                extra_cmd += f"{m} && "
+                
+            cmd = f"{extra_cmd} {cmd}"
+        
+        print(cmd)
         
         out = subprocess.getoutput(f'ssh {servername} "{cmd} -indir {server_home}/DATA/{server_indir} -outdir {server_home}/DATA/{server_outdir}"')
         
@@ -195,32 +246,47 @@ def preprocess(indir,
                pp_resrc="local",
                servername="",
                shared_folder="",
-               lib_path=LIB_PATH,
+               lib_path=APPTAINER_LIB_PATH,
                slurm=False,
                slurm_cmd=SLURM_CMD,
+               module=False,
+               module_ls=MODULE_LS
                ):
     
     fmt = find_format(indir)
     database = os.path.dirname(indir)
     imdir = os.path.basename(indir)
     if pp_resrc == "local":
+        print("Prepocess on local")
         Preprocess(database=database,
                    imdir=imdir,
                    outdir=outdir,
                    im_format=fmt
                    ).preprocess()
     else:
+        print("Prepocess on server")
         server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
+
         logging.info(f"database: {database}")
         logging.info(f"shared_folder: {shared_folder}")
+
         database = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, database)
         outdir = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, outdir)
         logfile = os.path.join(outdir, "..", "retrain.log")
+
+        # Extra modules
+        extra_cmd = ""
+        if module:
+            modules = module_ls.split(";")
+            for m in modules:
+                extra_cmd += f"{m} && "
         
         if slurm:
-            cmd = slurm_cmd + f" {server_home}/{lib_path} preprocess"
+            cmd = extra_cmd + slurm_cmd + f" {lib_path} preprocess"
         else:
-            cmd = f"{server_home}/{lib_path} preprocess"
+            cmd = extra_cmd + f"{lib_path} preprocess"
+
+        print(cmd)
             
         out = subprocess.getoutput(f'ssh {servername} "{cmd} -database {database} -imdir {imdir} -outdir {outdir} -im_format {fmt} -logfile {logfile}"')
         
@@ -231,15 +297,19 @@ def resample(workdir,
              pp_resrc="local",
              servername="",
              shared_folder="",
-             lib_path=LIB_PATH,
+             lib_path=APPTAINER_LIB_PATH,
              slurm=False,
-             slurm_cmd=SLURM_CMD):
+             slurm_cmd=SLURM_CMD,
+             module=False,
+             module_ls=MODULE_LS
+             ):
     
     indir = os.path.join(workdir, "retrain", "processed", "images")
     maskdir = os.path.join(workdir, "HeartSeg")
     outdir = os.path.join(workdir, "retrain", "resampled")
     metafile = os.path.join(workdir, "retrain", "processed", "metadata.csv")
     if pp_resrc == "local":
+        print("Resample on local")
         resample_folder(imdir=indir,
                         maskdir=maskdir,
                         outdir=outdir,
@@ -247,6 +317,7 @@ def resample(workdir,
                         meta_sep=",",
                         save_images=True)
     else:
+        print("Resample on server")
         server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
         indir = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, indir)
         maskdir = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, maskdir)
@@ -254,10 +325,19 @@ def resample(workdir,
         metafile = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, metafile)
         logfile = os.path.join(outdir, "..", "retrain.log")
         
+        # Extra modules
+        extra_cmd = ""
+        if module:
+            modules = module_ls.split(";")
+            for m in modules:
+                extra_cmd += f"{m} && "
+
         if slurm:
-            cmd = slurm_cmd + f" {server_home}/{lib_path} resample"
+            cmd = extra_cmd + slurm_cmd + f" {lib_path} resample"
         else:
-            cmd = f"{server_home}/{lib_path} resample"
+            cmd = extra_cmd + f"{lib_path} resample"
+
+        print(cmd)
         
         out = subprocess.getoutput(f'ssh {servername} "{cmd} -imdir {indir}" -maskdir {maskdir} -outdir {outdir} -metafile {metafile} -save_images 1 -logfile {logfile}')
         
@@ -271,13 +351,11 @@ def retrain(resrc,
             epochs=20,
             servername="",
             shared_folder="",
-            lib_path=LIB_PATH,
+            lib_path=APPTAINER_LIB_PATH,
             slurm=False,
             slurm_cmd=SLURM_CMD,
             module=False,
-            module_ls=MODULE_LS,
-            export=False,
-            exports=EXPORTS
+            module_ls=MODULE_LS
             ):
     
     data_dir = os.path.join(retrain_dir, "resampled")
@@ -289,28 +367,33 @@ def retrain(resrc,
     exec_placeholder = " -exp_dir {} -exp {} -data_dir {} -label_dir {} -configs {} -log_dir {} -evaluate none -logfile {} -epochs {}"
     
     if resrc == "local":
+        print("Retrain on local")
         import argparse
         from mousechd.run import train_clf
         params = {"exp_dir": outdir,
                   "exp": exp,
                   "data_dir": data_dir,
                   "label_dir": label_dir,
+                  "test_path": None,
                   "configs": configs,
                   "log_dir": log_dir,
                   "logfile": logfile,
-                  "epochs": epochs}
+                  "epochs": epochs,
+                  "evaluate": "none"}
         args = argparse.Namespace(**params)
         train_clf.main(args)
         
         return "Sucess"
     
     else:
+        from mousechd.utils.tools import CLF_ID
+        print("Retrain on server")
         server_home = subprocess.getoutput(f'ssh {servername} "pwd"')
         
         outdir = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, outdir)
         data_dir = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, data_dir)
         label_dir = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, label_dir)
-        configs = f"{server_home}/.MouseCHD/Classifier/configs.json"
+        configs = f"{server_home}/.MouseCHD/Classifier/{CLF_ID}/Classifier/configs.json"
         log_dir = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, log_dir)
         logfile = f"{server_home}/DATA/" + get_relative_sever_dir(shared_folder, logfile)
         
@@ -321,15 +404,10 @@ def retrain(resrc,
             for m in modules:
                 extra_cmd += f"{m} && "
         
-        if export:
-            exports = exports.split(";")
-            for e in exports:
-                extra_cmd += f"export {e} && "
-        
         if slurm:
-            cmd = extra_cmd + slurm_cmd + f" {server_home}/{lib_path} train_clf"
+            cmd = extra_cmd + slurm_cmd + f" {lib_path} train_clf"
         else:
-            cmd = extra_cmd + f"{server_home}/{lib_path} train_clf"
+            cmd = extra_cmd + f"{lib_path} train_clf"
             
         cmd += exec_placeholder.format(outdir,
                                        exp,

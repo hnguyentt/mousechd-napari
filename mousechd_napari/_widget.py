@@ -12,8 +12,8 @@ from napari.layers import Image
 from napari.utils.notifications import show_info
 from napari.utils.notifications import show_error
 from napari.qt.threading import thread_worker
-from qtpy.QtWidgets import (QWidget, QTabWidget, QHBoxLayout, QVBoxLayout, QLabel,
-                            QSpinBox, QPushButton, QTableWidget, QTableWidgetItem,
+from qtpy.QtWidgets import (QWidget, QSlider, QHBoxLayout, QVBoxLayout, QLabel,
+                            QSpinBox, QPushButton, QFrame, QTableWidgetItem,
                             QFileDialog, QComboBox, QAbstractItemView, QCheckBox,
                             QRadioButton, QLineEdit, QScrollArea, QDialog, QMessageBox)
 from qtpy.QtGui import QPixmap, QFont, QMovie
@@ -45,9 +45,9 @@ from mousechd.datasets.preprocess import x5_df, merge_base_x5_labels
 
 from ._utils import (is_relative_to, 
                      SLURM_CMD,
-                     LIB_PATH, 
+                     CONDA_LIB_PATH, 
+                     APPTAINER_LIB_PATH,
                      MODULE_LS,
-                     EXPORTS,
                      segment_heart,
                      segment_hearts,
                      gen_white2red_colormap,
@@ -83,6 +83,7 @@ comstyle = 'style="color:gray;background-color:gray;font-size:10px;"'
 
 COLORS = {"CHD": "red", "Normal": "green"}
 resources = ["local", "server"]
+# serverlibs = ["apptainer", "conda"]
 tasks = ["segment", "diagnose", "retrain"]
 
 issueLink = "<a href=\"https://github.com/hnguyentt/mousechd-napari/issues\"> <font color=green> issues</font> </a>"
@@ -93,10 +94,10 @@ try:
     default_vars = json.load(open(os.path.join(CACHE_DIR, "Napari", "vars.json"), "r"))
     servername = default_vars.get("servername", "")
     shared_folder = default_vars.get("shared_folder", "")
-    lib_path = default_vars.get("lib_path", LIB_PATH)
+    conda_lib_path = default_vars.get("conda_lib_path", CONDA_LIB_PATH)
+    apptainer_lib_path = default_vars.get("apptainer_lib_path", APPTAINER_LIB_PATH)
     slurm_cmd = default_vars.get("slurm_cmd", SLURM_CMD)
     module_ls = default_vars.get("module_ls", MODULE_LS)
-    exports = default_vars.get("exports", EXPORTS)
     outdir = default_vars.get("outdir", "")
     if not os.path.isdir(os.path.dirname(outdir)):
         outdir = ""
@@ -104,24 +105,24 @@ try:
 except FileNotFoundError:
     servername = ""
     shared_folder = ""
-    lib_path = LIB_PATH
+    conda_lib_path = CONDA_LIB_PATH
+    apptainer_lib_path = APPTAINER_LIB_PATH
     slurm_cmd = SLURM_CMD
     module_ls = MODULE_LS
-    exports = EXPORTS
     outdir = ""
     
     default_vars = {"servername": servername,
                     "shared_folder": shared_folder,
-                    "lib_path": lib_path,
+                    "conda_lib_path": conda_lib_path,
+                    "apptainer_lib_path": apptainer_lib_path,
                     "slurm_cmd": slurm_cmd,
                     "module_ls": module_ls,
-                    "exports": exports,
                     "outdir": outdir}
+    
     os.makedirs(os.path.join(CACHE_DIR, "Napari"), exist_ok=True)
     with open(os.path.join(CACHE_DIR, "Napari", "vars.json"), "w") as f:
         json.dump(default_vars, f, indent=1)
-    
-# os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
 
 try:
     tf.test.is_gpu_available()
@@ -203,12 +204,12 @@ class MouseCHD(QScrollArea):
         self.servername.textChanged.connect(self._unset_servername_warning)
         self.server_container.layout().addWidget(servername_container)
         
-        # Lib path
-        self.lib_path = QLineEdit()
-        libpath_container = self.create_QLineEdit(att_name="lib_path",
-                                                  label="Library path",
-                                                  default_txt=lib_path)
-        self.server_container.layout().addWidget(libpath_container)
+        self.apptainer_path = QLineEdit()
+        self.apptainer_container = self.create_QLineEdit(att_name="apptainer_path",
+                                                         label="Apptainer execution command: ",
+                                                         default_txt=apptainer_lib_path)
+        self.server_container.layout().addWidget(self.apptainer_container)
+        self.apptainer_container.show()
         
         self.slurm = QCheckBox("Slurm", self)
         self.slurm_cmd = QLineEdit()
@@ -224,13 +225,6 @@ class MouseCHD(QScrollArea):
         self.module_ls.hide()
         self.server_container.layout().addWidget(self.module_container)
         
-        self.export = QCheckBox("Export flags", self)
-        self.export_cmd = QLineEdit()
-        self.export_container = self.create_checkbox(box_name="export", txt_name="export_cmd", default_txt=exports)
-        self.export.stateChanged.connect(self._on_export_changed)
-        self.export_cmd.hide()
-        self.server_container.layout().addWidget(self.export_container)
-        
         ### Shared folder
         self.shared_folder = QLineEdit()
         folder_container = self.create_folder_browser(label="Shared folder*: ",
@@ -242,6 +236,45 @@ class MouseCHD(QScrollArea):
         self.server_container.hide()
         
         resrc_container.layout().addWidget(self.server_container)
+        
+        # Threads for preprocessing and saving nifti
+        instruction = ("If your computer crashes or it is frozen, consider to decrease these parameter. " +
+                       "Be aware that the segmentation may take longer to finish if you decrease these numbers!")
+        self.nthreads_container = QWidget()
+        self.nthreads_container.setLayout(QVBoxLayout())
+        self.nthreads_container.layout().addWidget(self.create_help_text(instruction))
+        
+        self.nthreads_preprocessing = QSpinBox()
+        nthreads_preprocessing_cont = self.create_QSpinBox(att_name="nthreads_preprocessing",
+                                                           label="\tNumber of preprocessing threads:",
+                                                           min_val=1,
+                                                           default_val=6)
+        self.nthreads_preprocessing.setValue(int(6))
+        self.nthreads_container.layout().addWidget(nthreads_preprocessing_cont)
+        
+        self.nthreads_nifti = QSpinBox()
+        nthreads_nifti_cont = self.create_QSpinBox(att_name="nthreads_nifti",
+                                                   label="\tNumber of threads for saving NIFTI files:",
+                                                   min_val=1,
+                                                   default_val=2)
+        self.nthreads_nifti.setValue(int(2))
+        self.nthreads_container.layout().addWidget(nthreads_nifti_cont)
+        
+        instruction = ("If the segmentation is too slow, especially on CPU, consider to increase step size. " +
+                       "Be aware that increase this number will decrease the accuracy of segmentation model significantly.")
+        self.nthreads_container.layout().addWidget(self.create_help_text(instruction))
+        
+        self.step_size = QSlider()
+        stepsize_cont = self.create_QSlider(att_name="step_size",
+                                            label="\tStep size: ",
+                                            min_val=0.1,
+                                            max_val=1,
+                                            magf=10,
+                                            default_val=0.5)
+        self.step_size.setValue(5)
+        self.nthreads_container.layout().addWidget(stepsize_cont)
+        
+        resrc_container.layout().addWidget(self.nthreads_container)
         
         ## Change
         for btn in resrc_buttons:
@@ -589,13 +622,78 @@ class MouseCHD(QScrollArea):
         getattr(self, txt_name).setFont(parameter_font)
         container.layout().addWidget(getattr(self, txt_name))
         
-        return container    
+        return container
+    
+    
+    def create_QSpinBox(self, att_name, label, min_val=None, max_val=None, default_val=1):
+        container = QWidget()
+        container.setLayout(QHBoxLayout())
+        label = QLabel(label)
+        label.setFont(parameter_font)
+        container.layout().addWidget(label)
         
+        # Create QSpinBox
+        spin_box = QSpinBox()
+        if min_val is not None:    
+            spin_box.setMinimum(min_val)
+        if max_val is not None:
+            spin_box.setMaximum(max_val)
+        spin_box.setValue(default_val)
+        
+        container.layout().addWidget(spin_box)
+        
+        # Connect the value changed signal to attribute
+        spin_box.valueChanged.connect(lambda value: getattr(self, att_name).setValue(value))
+        
+        return container
+    
+    def create_QSlider(self, att_name, label, min_val, max_val, magf, default_val):
+        container = QWidget()
+        container.setLayout(QHBoxLayout())
+        label = QLabel(label)
+        label.setFont(parameter_font)
+        container.layout().addWidget(label) 
+        
+        # Create a QSlider
+        slider = QSlider(Qt.Horizontal)
+        slider.setMinimum(int(min_val*magf))
+        slider.setMaximum(int(max_val*magf))
+        slider.setValue(int(default_val*magf))
+        
+        min_label = QLabel(f"{min_val:.2f}")
+        max_label = QLabel(f"{max_val:.2f}")
+        
+        # Create a QLabel to display the selected value
+        selected_slider_value_label = QLabel(f"{default_val:.2f}")
+        selected_slider_value_label.setAlignment(Qt.AlignCenter)
+        
+        # Create a QFrame to act as the green box for the selected value
+        green_box = QFrame()
+        green_box.setStyleSheet("background-color: green; color: white; padding: 0px;")
+        green_box.setFixedHeight(30)
+        green_box.setFixedWidth(60)  # Set a fixed width for the green box
+        
+        green_box_layout = QVBoxLayout(green_box)
+        green_box_layout.setContentsMargins(0,0,0,0)
+        green_box_layout.addWidget(selected_slider_value_label)
+        
+        
+        container.layout().addWidget(min_label)
+        container.layout().addWidget(slider)
+        container.layout().addWidget(max_label)
+        container.layout().addWidget(green_box)
+        
+        # Connect the valueChanged signal to the function
+        slider.valueChanged.connect(lambda value: (getattr(self, att_name).setValue(value),
+                                                   selected_slider_value_label.setText(f"{value/magf:.2f}")))
+        
+        return container   
     
     
     ################
     # CHANGE UTILS #
     ################
+    
     def _on_dir_btn_clicked(self, att_name, header):
         dir_name = QFileDialog.getExistingDirectory(self, header)
         if dir_name:
@@ -612,6 +710,9 @@ class MouseCHD(QScrollArea):
             self.run_tsb_btn.show()
         else:
             self.run_tsb_btn.hide()
+
+        if self.outdir.text() != "":
+            self.outdir.setStyleSheet(unwarning_style)
             
     
     def _on_resrc_changed(self, btn):
@@ -626,16 +727,16 @@ class MouseCHD(QScrollArea):
                 self.outdir.setText(os.path.join(self.shared_folder.text(), "Retrain"))
             self.server_container.show()
             self.retrain_instruct.show()
-            # self.custom_instruct.show()
             self.pp_resrc_container.show()
+            self.nthreads_container.hide()
         else:
             self.outdir.setText(outdir)
             self.server_container.hide()
             self.retrain_instruct.hide()
-            # self.custom_instruct.hide()
             self.pp_resrc_container.hide()
+            self.nthreads_container.show()
             
-    
+             
     def _on_task_changed(self, btn):
         if btn.isChecked():
             self.task = btn.text()
@@ -652,6 +753,7 @@ class MouseCHD(QScrollArea):
                 self.retrain_container.hide() 
         else:
             btn.setStyleSheet(unchecked_style) 
+
         if os.path.isdir(self.logdir):
             self.run_tsb_btn.show()
         else:
@@ -707,14 +809,7 @@ class MouseCHD(QScrollArea):
             self.module_ls.show()
         else:
             self.module_ls.hide()
-            
-            
-    def _on_export_changed(self):
-        if self.export.isChecked():
-            self.export_cmd.show()
-        else:
-            self.export_cmd.hide()
-    
+
     
     def _unset_shared_folder_warning(self):
         self.outdir.setText(os.path.join(self.shared_folder.text(), "Retrain"))
@@ -783,7 +878,7 @@ class MouseCHD(QScrollArea):
                 
                 pred_class = categories_map[class_idx]
                 prob = preds[class_idx]
-                max_length = 100
+                max_length = 50
                 if pred_class == "CHD":
                     prob = prob
                 else:
@@ -838,7 +933,7 @@ class MouseCHD(QScrollArea):
         
         if self.resrc == "local":
             if not torch.cuda.is_available():
-                show_info("Local machine does not have GPU, running segmentation on CPU may take 40-45 minutes!")
+                show_info("MouseCHD plugin can't found GPU on your local machine, running segmentation on CPU may take 40-45 minutes!")
                 # is_executable = False
                 # show_info("Local machine does not have GPU, please use server machine or install corresponding CUDA Toolkit.")
         if self.resrc == "server":
@@ -856,15 +951,15 @@ class MouseCHD(QScrollArea):
                 is_executable = False
                 show_info("Input image is required!")
                 self._image_layers.setStyleSheet(warning_style)
-                
-        if self.task in ["diagnose", "retrain"]:
+
+        if self.task == "diagnose":
             if self.model_name == "retrained":
                 if self.model_path.text() == "":
                     is_executable = False
                     self.model_path.setStyleSheet(warning_style)
                     show_info("Custom model path is required!")
-        
-                elif self.resrc == "server":
+
+                if self.resrc == "server":
                     # check if custom model on shared folder
                     if not is_relative_to(self.shared_folder.text(), self.model_path.text()):
                         is_executable = False
@@ -877,10 +972,16 @@ class MouseCHD(QScrollArea):
                 is_executable = False
                 self.data_dir.setStyleSheet(warning_style)
                 show_info("Data directory is required!")
-                
-            folders = [x for x in os.listdir(self.data_dir.text()) if not x.startswith(".")]
-            if ("CHD" not in folders) | ("Normal" not in folders):
+
+            else:
+                folders = [x for x in os.listdir(self.data_dir.text()) if not x.startswith(".")]
+                if ("CHD" not in folders) | ("Normal" not in folders):
+                    is_executable = False
+
+            if self.outdir.text() == "":
                 is_executable = False
+                self.outdir.setStyleSheet(warning_style)
+                show_info("Output directory is required!")
                 
         # Parameters
         if self.resrc == "local":
@@ -900,16 +1001,17 @@ class MouseCHD(QScrollArea):
             self.run_worker = run_task(task=self.task,
                                        resrc=self.resrc,
                                        workdir=self.workdir,
+                                       nthreads_preprocessing=self.nthreads_preprocessing.value(),
+                                       nthreads_nifti=self.nthreads_nifti.value(),
+                                       step_size=self.step_size.value()/10.,
                                        heart_name=self._image_layers.currentText(),
                                        servername=self.servername.text(),
                                        shared_folder=self.shared_folder.text(),
-                                       lib_path=self.lib_path.text(),
+                                       lib_path=self.apptainer_path.text(),
                                        slurm=self.slurm.isChecked(),
                                        slurm_cmd=self.slurm_cmd.text(),
                                        module=self.module.isChecked(),
                                        module_ls=self.module_ls.text(),
-                                       export=self.export.isChecked(),
-                                       flags=self.export_cmd.text(),
                                        image=image,
                                        model=self.model,
                                        pp_resrc=self.pp_resrc,
@@ -936,13 +1038,20 @@ class MouseCHD(QScrollArea):
             self.log_worker.quit()
             
         if self.resrc == "server":
-            server_home = subprocess.getoutput(f'ssh {self.servername.text()} pwd')
-            out = subprocess.getoutput(f'ssh {self.servername.text()} "ps aux | grep {server_home}/{self.lib_path.text()}"')
-            print(out)
-            pid = out.split()[1]
-            print(out.split())
-            print(pid)
-            print(subprocess.getoutput(f'ssh {self.servername.text()} "kill -9 {pid}"'))
+            if self.slurm:
+                cancel_cmd = "squeue | grep mousechd | awk '{print $1}'"
+                out = subprocess.getoutput(f'ssh {self.servername.text()} {cancel_cmd}')
+                while out != "":
+                    print(f"Cancel job {out}")
+                    subprocess.getoutput(f'ssh {self.servername.text()} "scancel {out}"')
+                    out = subprocess.getoutput(f'ssh {self.servername.text()} {cancel_cmd}')
+            else:
+                out = subprocess.getoutput(f'ssh {self.servername.text()} "ps aux | grep mousechd"')
+                print(out)
+                pid = out.split()[1]
+                print(out.split())
+                print(pid)
+                print(subprocess.getoutput(f'ssh {self.servername.text()} "kill -9 {pid}"'))
         self.stop_btn.hide()
         self.run_btn.show()
         self.log_container.show()
@@ -968,6 +1077,8 @@ class MouseCHD(QScrollArea):
         
         if self.resrc == "server":
             self.workdir = os.path.join(self.shared_folder.text(), ".MouseCHD")
+        else:
+            self.workdir = os.path.join(CACHE_DIR, "Napari")
             
         self.log_container.hide()
         self.cache_btn.setEnabled(False)
@@ -986,17 +1097,17 @@ class MouseCHD(QScrollArea):
             
             try:
                 shutil.rmtree(os.path.join(self.workdir, "HeartSeg"))
-            except FileNotFoundError:
+            except:
                 pass
             
             try:
                 shutil.rmtree(os.path.join(self.workdir, "processed"))
-            except FileNotFoundError:
+            except:
                 pass
             
             try:
                 shutil.rmtree(os.path.join(self.workdir, "retrain"))
-            except FileNotFoundError:
+            except:
                 pass
             
         self.cache_btn.setEnabled(True)
@@ -1025,17 +1136,18 @@ def read_log(path):
 @thread_worker
 def run_task(task,
              resrc,
+             nthreads_preprocessing,
+             nthreads_nifti,
+             step_size,
              workdir,
              heart_name,
              servername,
              shared_folder,
-             lib_path=lib_path,
+             lib_path=apptainer_lib_path,
              slurm=False,
              slurm_cmd=slurm_cmd,
              module=False,
              module_ls=module_ls,
-             export=False,
-             flags=exports,
              image=None,
              model=None,
              pp_resrc="local",
@@ -1046,7 +1158,32 @@ def run_task(task,
              epochs=20,
              ):
     
-    layer = {"stop_worker": False, "tsb": False }
+    print("="*10 + "PARAMETERS" + "="*10)
+    print(f"task={task}")
+    print(f"resrc={resrc}")
+    print(f"nthreads_preprocessing={nthreads_preprocessing}")
+    print(f"nthreads_nifti={nthreads_nifti}")
+    print(f"step_size={step_size}")
+    print(f"workdir={workdir}")
+    print(f"heart_name={heart_name}")
+    print(f"servername={servername}")
+    print(f"shared_folder={shared_folder}")
+    print(f"slurm={slurm}")
+    print(f"slurm_cmd={slurm_cmd}")
+    print(f"module={module}")
+    print(f"module_ls={module_ls}")
+    print(f"image={image}")
+    print(f"model={model}")
+    print(f"pp_resrc={pp_resrc}")
+    print(f"chd_dir={chd_dir}")
+    print(f"norm_dir={norm_dir}")
+    print(f"outdir={outdir}")
+    print(f"exp={exp}")
+    print(f"epochs={epochs}")
+    print("="*30)
+
+    
+    layer = {"stop_worker": False, "tsb": False, "log": ""}
     
     try:
         # Save default vars
@@ -1055,7 +1192,6 @@ def run_task(task,
                         "lib_path": lib_path,
                         "slurm_cmd": slurm_cmd,
                         "module_ls": module_ls,
-                        "exports": exports,
                         "outdir": outdir}
         
         with open(os.path.join(CACHE_DIR, "Napari", "vars.json"), "w") as f:
@@ -1065,10 +1201,10 @@ def run_task(task,
             assert image is not None, "Image must be specified"
             scale = image.scale
             if not torch.cuda.is_available() and (resrc=="local"):
-                layer["log"] = ("Your machine doesn't have GPUs or GPUs are not compatible." 
+                layer["log"] = ("Your machine doesn't have GPUs or CUDA versions are not compatible." 
                                 + "Using CPU for segmentation may take 40-45 minutes." 
-                                + "Running on GPUs takes 2-3 minutes to finish!")
-                layer["log"] += ("\n\nNote that we use minimal mode: inference with only 1 fold, step_size=1, and distable TTA to make inference on CPU faster"
+                                + "Running on GPUs takes 4-5 minutes to finish!")
+                layer["log"] += ("\n\nNote that we use minimal mode: inference with only 1 fold and distable TTA to make inference on CPU faster"
                                  + "This may make the segmentation not as accurate as running on full mode!")
                 yield layer
             if (resrc=="local") and (not os.path.isdir(SEG_DIR)):
@@ -1080,13 +1216,18 @@ def run_task(task,
             show_info("Start heart segmentation!")
             seg_start = time.time()
             heart = segment_heart(resrc=resrc,
+                                  nthreads_preprocessing=nthreads_preprocessing,
+                                  nthreads_nifti=nthreads_nifti,
+                                  step_size=step_size,
                                   workdir=workdir,
                                   heart_name=heart_name,
                                   servername=servername,
                                   shared_folder=shared_folder,
                                   lib_path=lib_path,
                                   slurm=slurm,
-                                  slurm_cmd=slurm_cmd)
+                                  slurm_cmd=slurm_cmd,
+                                  module=module,
+                                  module_ls=module_ls)
             max_clump = get_largest_connectivity(heart)
             heart[max_clump==0] = 0
             seg_end = time.time()
@@ -1164,7 +1305,9 @@ def run_task(task,
                        shared_folder=shared_folder,
                        lib_path=lib_path,
                        slurm=slurm,
-                       slurm_cmd=slurm_cmd)
+                       slurm_cmd=slurm_cmd,
+                       module=module,
+                       module_ls=module_ls)
             chd_end = time.time()
             layer["log"] = "Finished! Processing time: {}\n".format(
                 time.strftime("%Hh%Mm%Ss", time.gmtime(chd_end - chd_start))
@@ -1182,7 +1325,9 @@ def run_task(task,
                        shared_folder=shared_folder,
                        lib_path=lib_path,
                        slurm=slurm,
-                       slurm_cmd=slurm_cmd)
+                       slurm_cmd=slurm_cmd,
+                       module=module,
+                       module_ls=module_ls)
             norm_end = time.time()
             layer["log"] = "Finished! Processing time: {}\n".format(
                 time.strftime("%Hh%Mm%Ss", time.gmtime(norm_end - norm_start))
@@ -1205,12 +1350,17 @@ def run_task(task,
 
             seg_start = time.time()
             segment_hearts(resrc=resrc,
+                           nthreads_preprocessing=nthreads_preprocessing,
+                           nthreads_nifti=nthreads_nifti,
+                           step_size=step_size,
                            workdir=workdir,
                            servername=servername,
                            shared_folder=shared_folder,
                            lib_path=lib_path,
                            slurm=slurm,
-                           slurm_cmd=slurm_cmd)
+                           slurm_cmd=slurm_cmd,
+                           module=module,
+                           module_ls=module_ls)
             seg_end = time.time()
             layer["log"] = "Finished! Processing time: {}\n".format(
                 time.strftime("%Hh%Mm%Ss", time.gmtime(seg_end - seg_start))
@@ -1226,7 +1376,9 @@ def run_task(task,
                      shared_folder=shared_folder,
                      lib_path=lib_path,
                      slurm=slurm,
-                     slurm_cmd=slurm_cmd)
+                     slurm_cmd=slurm_cmd,
+                     module=module,
+                     module_ls=module_ls)
             res_end = time.time()
             layer["log"] = "Finished! Processing time: {}\n".format(
                 time.strftime("%Hh%Mm%Ss", time.gmtime(res_end - res_start))
@@ -1281,9 +1433,8 @@ def run_task(task,
                              slurm=slurm,
                              slurm_cmd=slurm_cmd,
                              module=module,
-                             module_ls=module_ls,
-                             export=export,
-                             exports=exports)    
+                             module_ls=module_ls
+                             )    
                 
             train_end = time.time()
             if status == "Error":

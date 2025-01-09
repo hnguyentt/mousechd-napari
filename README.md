@@ -14,6 +14,13 @@
 
 (3) Restart Napari to run the plugin
 
+
+### Containers
+#### Docker
+
+#### Apptainer (Singularity)
+
+
 ### From code
 ```bash
 conda create -n mousechd_napari python=3.9
