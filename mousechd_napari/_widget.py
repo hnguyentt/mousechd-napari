@@ -1065,7 +1065,7 @@ class MouseCHD(QScrollArea):
         
         self.run_tsb_btn.hide()
         tsb = program.TensorBoard()
-        tsb.configure(argv=[None, '--logdir', self.logdir])
+        tsb.configure(argv=[None, '--logdir', self.logdir, "--host", "0.0.0.0", "--port", "6006"])
         url = tsb.launch()
         self.tsb_msg.setText(f"Tensorflow listening on <a href=\"{url}\"> <font color=green> {url}</font> </a>")
         self.tsb_msg.show()
