@@ -52,7 +52,8 @@ sudo docker pull hoanguyen93/mousechd-napari
     * Run docker: `udo docker run --gpus all -v <path/to/home/on/host>:<path/to/home/on/host> -v /home/hnguyent/Downloads/.ssh:/root/.ssh:ro -it --rm -p 9876:9876 -p 6006:6006 hoanguyen93/mousechd-napari`
     * Open this link on your browser: [http://localhost:9876/](http://localhost:9876/)
 
-
+##### Known issues
+* The plugin in docker container can't display 3D view, please choose 2D view to display the sample and images.
 
 #### Apptainer (Singularity)
 If you want to run with server resource, follow [this instruction](./docs/server_setup.md) to setup running on server.
