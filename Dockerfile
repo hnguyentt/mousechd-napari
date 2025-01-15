@@ -78,5 +78,3 @@ CMD echo "Launching napari on Xpra. Connect via http://localhost:$XPRA_PORT or $
     --notifications=no \
     --bell=no \
     $DISPLAY
-
-# ENTRYPOINT []

@@ -101,10 +101,8 @@ After this step, you can access to the server without entering password.
 
 ### Install the `mousechd` package
 
-1. SSH to your server: `ssh <hostname>`, enter the required password.
-2. `conda create -n mousechd python=3.9`
-3. `conda activate mousechd`
-4. `pip install mousechd`
+1. SSH to your server: `ssh <hostname>`, enter the password (if required).
+2. Download the MouseCHD Apptainer: `wget https://zenodo.org/records/13928753/files/mousechd.sif`
 
 ### Locate the shared folder
 On the remote server, locate the shared folder at `$HOME/DATA`.
@@ -127,16 +125,13 @@ Congratulations! You've successfully completed the setup to run the plugin on th
             <td><b>Servername:</b> it is the hostname you placed in your config file.</td>
         </tr>
         <tr>
-            <td><b>Library path:</b> you can find this parameter by typing <font color=red><i>which mousechd</i></font> on your server when the <font color=red><i>mousech</i></font> environment is activated. Default: <i>miniconda3/envs/mousechd/bin/mousechd</i>.</td>
+            <td><b>Apptainer execution command:</b> the command to run apptainer. Default: <i>apptainer exec -B /pasteur --nv mousechd.sif mousechd</i>. <font color=red><i>-B</i></font> to mount volume if necessary, <font color=red><i>--nv</i></font> to run with GPU.</td>
         </tr>
         <tr>
-            <td><b>Slurm:</b> your server uses <a href=https://slurm.schedmd.com/documentation.html> <font color=green>Slurm Workload Manager</font> </a>" to request the resource or not. If yes, what is the command? Default: <i>srun -J 'mousechd' --qos=gpu --gres=gpu:1</i></td>
+            <td><b>Slurm:</b> your server uses <a href=https://slurm.schedmd.com/documentation.html> <font color=green>Slurm Workload Manager</font> </a>" to request the resource or not. If yes, what is the command? Default: <i>srun -J 'mousechd' -p gpu --qos=gpu --gres=gpu:1</i></td>
         </tr>
         <tr>
-            <td><b>Load modules:</b> Do you need to load some modules to run on GPU? If yes, specify. Default: <i>module use /c7/shared/modulefiles && module load cuda/11.8.0_520.61.05</i></td>
-        </tr>
-        <tr>
-            <td><b>Export flags:</b> Some paths need to export to help run on GPU. In case of multiple flags, seperate them by ";" Default: <i>XLA_FLAGS=--xla_gpu_cuda_data_dir=/c7/shared/cuda/11.8.0_520.61.05</i></td>
+            <td><b>Load modules:</b> Do you need to load some modules to run the program? If yes, specify. Default: <i>module load apptainer</i></td>
         </tr>
     </tbody>
 </table>
