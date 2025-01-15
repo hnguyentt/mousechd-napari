@@ -27,7 +27,7 @@ os.makedirs(tmp_dir, exist_ok=True)
 CONDA_LIB_PATH = "miniconda3/envs/mousechd/bin/mousechd"
 APPTAINER_LIB_PATH = "apptainer exec -B /pasteur --nv mousechd.sif mousechd"
 SLURM_CMD = "srun -J 'mousechd' -p gpu --qos=gpu --gres=gpu:1 --cpus-per-task=1 --mem-per-cpu=500000"
-MODULE_LS = "module use /c7/shared/modulefiles && module load cuda/11.8.0_520.61.05"
+MODULE_LS = "module load apptainer"
 
 
 def is_relative_to(path1, path2):
