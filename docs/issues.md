@@ -81,3 +81,13 @@ WARNING: QStandardPaths: XDG_RUNTIME_DIR not set, defaulting to '/tmp/runtime-ro
 /root/.MouseCHD/Napari/assets/thumbnail.png
 ```
 
+## Permission denied when running Apptainer
+
+This error means that Napari does not have the necessary permissions to access or write to the indicated folders/files.
+
+Fix:
+```bash
+sudo chown -R $USER:$USER ~/.cache/napari 
+sudo chown -R $USER:$USER ~/.config/
+```
+
